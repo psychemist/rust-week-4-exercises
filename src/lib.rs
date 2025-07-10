@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{io::Read, str::FromStr};
 use thiserror::Error;
 
 // Custom errors for Bitcoin operations
@@ -145,15 +145,40 @@ impl BitcoinSerialize for LegacyTransaction {
 }
 
 // Decoding legacy transaction
-// impl TryFrom<&[u8]> for LegacyTransaction {
-//     type Error = BitcoinError;
+impl TryFrom<&[u8]> for LegacyTransaction {
+    type Error = BitcoinError;
 
-//     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-//         // Parse binary data into a LegacyTransaction
-//         // Minimum length is 10 bytes (4 version + 4 inputs count + 4 lock_time)
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        // Parse binary data into a LegacyTransaction
+        let mut data = data;
+        
+        // Minimum length is 12 bytes (4 version + 4 inputs count + 4 lock_time)
+        if data.len() < 12 {
+            Err(BitcoinError::InvalidTransaction)
+        } else {
+            // Read tx fields from data input and build LegacyTransaction
+            let mut version_buf = [0; 4];
+            let mut input_buf = [0; 4];
+            let mut ouput_buf = [0; 4];
+            let mut lock_time_buf = [0; 4];
 
-//     }
-// }
+            let _ = data.read_exact(&mut version_buf);
+            let _ = data.read_exact(&mut input_buf);
+            let _ = data.read_exact(&mut ouput_buf);
+            let _ = data.read_exact(&mut lock_time_buf);
+
+            let input_count = u32::from_le_bytes(input_buf);
+            let output_count = u32::from_le_bytes(ouput_buf);
+
+            Ok(LegacyTransaction {
+                version: i32::from_le_bytes(version_buf),
+                inputs: Vec::with_capacity(input_count as usize),
+                outputs: Vec::with_capacity(output_count as usize),
+                lock_time: u32::from_le_bytes(lock_time_buf),
+            })
+        }
+    }
+}
 
 // // Simple CLI argument parser
 // pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
