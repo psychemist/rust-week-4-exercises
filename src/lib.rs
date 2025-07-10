@@ -44,11 +44,12 @@ pub struct LegacyTransaction {
     pub lock_time: u32,
 }
 
-// impl LegacyTransaction {
-//     pub fn builder() -> LegacyTransactionBuilder {
-//         // TODO: Return a new builder for constructing a transaction
-//     }
-// }
+impl LegacyTransaction {
+    pub fn builder() -> LegacyTransactionBuilder {
+        // Return a new builder for constructing a transaction
+        LegacyTransactionBuilder::default()
+    }
+}
 
 // Transaction builder
 pub struct LegacyTransactionBuilder {
@@ -65,36 +66,51 @@ impl Default for LegacyTransactionBuilder {
             version: 1,
             inputs: vec![],
             outputs: vec![],
-            lock_time: 0
+            lock_time: 0,
         }
     }
 }
 
-// impl LegacyTransactionBuilder {
-//     pub fn new() -> Self {
-//         // TODO: Initialize new builder by calling default
-//     }
+impl LegacyTransactionBuilder {
+    pub fn new() -> Self {
+        // Initialize new builder by calling default
+        Self::default()
+    }
 
-//     pub fn version(mut self, version: i32) -> Self {
-//         // TODO: Set the transaction version
-//     }
+    pub fn version(mut self, version: i32) -> Self {
+        // Set the transaction version
+        self.version = version;
+        self
+    }
 
-//     pub fn add_input(mut self, input: TxInput) -> Self {
-//         // TODO: Add input to the transaction
-//     }
+    pub fn add_input(mut self, input: TxInput) -> Self {
+        // Add input to the transaction
+        self.inputs.push(input);
+        self
+    }
 
-//     pub fn add_output(mut self, output: TxOutput) -> Self {
-//         // TODO: Add output to the transaction
-//     }
+    pub fn add_output(mut self, output: TxOutput) -> Self {
+        // Add output to the transaction
+        self.outputs.push(output);
+        self
+    }
 
-//     pub fn lock_time(mut self, lock_time: u32) -> Self {
-//         // TODO: Set lock_time for transaction
-//     }
+    pub fn lock_time(mut self, lock_time: u32) -> Self {
+        // Set lock_time for transaction
+        self.lock_time = lock_time;
+        self
+    }
 
-//     pub fn build(self) -> LegacyTransaction {
-//         // TODO: Build and return the final LegacyTransaction
-//     }
-// }
+    pub fn build(self) -> LegacyTransaction {
+        // Build and return the final LegacyTransaction
+        LegacyTransaction {
+            version: self.version,
+            inputs: self.inputs,
+            outputs: self.outputs,
+            lock_time: self.lock_time,
+        }
+    }
+}
 
 // Transaction components
 #[derive(Debug, Clone)]
