@@ -28,12 +28,25 @@ impl<T> Point<T> {
     }
 }
 
-// Custom serialization for Bitcoin transaction
-// pub trait BitcoinSerialize {
-//     fn serialize(&self) -> Vec<u8> {
-//         // Implement serialization to bytes
-//     }
-// }
+#[derive(Debug, Clone)]
+pub struct OutPoint {
+    pub txid: [u8; 32],
+    pub vout: u32,
+}
+
+// Transaction components
+#[derive(Debug, Clone)]
+pub struct TxInput {
+    pub previous_output: OutPoint,
+    pub script_sig: Vec<u8>,
+    pub sequence: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct TxOutput {
+    pub value: u64, // in satoshis
+    pub script_pubkey: Vec<u8>,
+}
 
 // Legacy Bitcoin transaction
 #[derive(Debug, Clone)]
@@ -112,25 +125,35 @@ impl LegacyTransactionBuilder {
     }
 }
 
-// Transaction components
-#[derive(Debug, Clone)]
-pub struct TxInput {
-    pub previous_output: OutPoint,
-    pub script_sig: Vec<u8>,
-    pub sequence: u32,
+// Custom serialization for Bitcoin transaction
+pub trait BitcoinSerialize {
+    fn serialize(&self) -> Vec<u8> {
+        // Implement serialization to bytes
+        vec![]
+    }
 }
 
-#[derive(Debug, Clone)]
-pub struct TxOutput {
-    pub value: u64, // in satoshis
-    pub script_pubkey: Vec<u8>,
+// Custom serialization for transaction
+impl BitcoinSerialize for LegacyTransaction {
+    fn serialize(&self) -> Vec<u8> {
+        // Serialize only version and lock_time (simplified)
+        let mut serialized_tx = Vec::<u8>::with_capacity(8);
+        serialized_tx.extend(self.version.to_le_bytes());
+        serialized_tx.extend(self.lock_time.to_le_bytes());
+        serialized_tx
+    }
 }
 
-#[derive(Debug, Clone)]
-pub struct OutPoint {
-    pub txid: [u8; 32],
-    pub vout: u32,
-}
+// Decoding legacy transaction
+// impl TryFrom<&[u8]> for LegacyTransaction {
+//     type Error = BitcoinError;
+
+//     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+//         // Parse binary data into a LegacyTransaction
+//         // Minimum length is 10 bytes (4 version + 4 inputs count + 4 lock_time)
+
+//     }
+// }
 
 // // Simple CLI argument parser
 // pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
@@ -140,21 +163,4 @@ pub struct OutPoint {
 // pub enum CliCommand {
 //     Send { amount: u64, address: String },
 //     Balance,
-// }
-
-// // Decoding legacy transaction
-// impl TryFrom<&[u8]> for LegacyTransaction {
-//     type Error = BitcoinError;
-
-//     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-//         // TODO: Parse binary data into a LegacyTransaction
-//         // Minimum length is 10 bytes (4 version + 4 inputs count + 4 lock_time)
-//     }
-// }
-
-// // Custom serialization for transaction
-// impl BitcoinSerialize for LegacyTransaction {
-//     fn serialize(&self) -> Vec<u8> {
-//         // TODO: Serialize only version and lock_time (simplified)
-//     }
 // }
