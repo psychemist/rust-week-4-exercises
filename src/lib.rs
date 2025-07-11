@@ -1,3 +1,4 @@
+use clap::{Parser, Subcommand};
 use std::{io::Read, str::FromStr};
 use thiserror::Error;
 
@@ -25,6 +26,30 @@ impl<T> Point<T> {
     pub fn new(x: T, y: T) -> Self {
         // Implement constructor for Point
         Self { x, y }
+    }
+}
+
+impl<T: FromStr> FromStr for Point<T> {
+    type Err = BitcoinError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (x, y) = s
+            .strip_prefix('(')
+            .and_then(|s| s.strip_suffix(')'))
+            .and_then(|s| s.split_once(','))
+            .ok_or(BitcoinError::ParseError("Error parsing values".to_string()))?;
+
+        let x_fromstr = x
+            .parse::<T>()
+            .map_err(|_| BitcoinError::ParseError("Could not parse x value".to_string()))?;
+        let y_fromstr = y
+            .parse::<T>()
+            .map_err(|_| BitcoinError::ParseError("Could not parse y value".to_string()))?;
+
+        Ok(Point {
+            x: x_fromstr,
+            y: y_fromstr,
+        })
     }
 }
 
@@ -151,7 +176,7 @@ impl TryFrom<&[u8]> for LegacyTransaction {
     fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
         // Parse binary data into a LegacyTransaction
         let mut data = data;
-        
+
         // Minimum length is 12 bytes (4 version + 4 inputs count + 4 lock_time)
         if data.len() < 12 {
             Err(BitcoinError::InvalidTransaction)
@@ -180,12 +205,82 @@ impl TryFrom<&[u8]> for LegacyTransaction {
     }
 }
 
-// // Simple CLI argument parser
-// pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
-//     // TODO: Match args to "send" or "balance" commands and parse required arguments
-// }
+#[derive(Parser)]
+#[command(name = "BTxC Decoder")]
+#[command(version = "1.0.0")]
+#[command(about = "Bitcoin Transaction Decoder", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<CliCommand>,
+}
 
-// pub enum CliCommand {
-//     Send { amount: u64, address: String },
-//     Balance,
-// }
+#[derive(Subcommand)]
+pub enum CliCommand {
+    /// Sends bitcoin of { amount } to recipient { address }
+    Send {
+        #[arg(
+            required = true,
+            help = "(numeric, required) The amount of bitcoin you want to send in satoshis"
+        )]
+        amount: u64,
+        #[arg(
+            required = true,
+            help = "(string, required) The address of the recipient you want to send bitcoins to"
+        )]
+        address: String,
+    },
+
+    /// Returns the balance of transaction sender
+    Balance,
+}
+
+// Simple CLI argument parser
+pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
+    // Match args to "send" or "balance" commands and parse required arguments
+    if args.len() == 0 {
+        return Err(BitcoinError::ParseError(String::from(
+            "No arguments provided",
+        )));
+    }
+
+    let mut command: Vec<String> = vec![];
+    command.push("BTxC Decoder".to_string());
+    for i in 0..args.len() {
+        command.push(args[i].clone());
+    }
+
+    let cli = match Cli::try_parse_from(command) {
+        Ok(cli) => cli,
+        Err(_) => {
+            return Err(BitcoinError::ParseError(
+                "Failed to parse arguments".to_string(),
+            ));
+        }
+    };
+
+    match &cli.command {
+        Some(CliCommand::Send { amount, address }) => {
+            if Some(amount).is_none() {
+                return Err(BitcoinError::ParseError("Amount is required".to_string()));
+            } else if address.is_empty() {
+                return Err(BitcoinError::ParseError(
+                    "Address cannot be empty".to_string(),
+                ));
+            } else if *amount == 0 {
+                return Err(BitcoinError::InvalidAmount);
+            } else {
+                println!("Sending {} satoshis to {}!", amount, address);
+                return Ok(CliCommand::Send {
+                    amount: *amount,
+                    address: address.clone(),
+                });
+            }
+        }
+        Some(CliCommand::Balance) => {
+            return Ok(CliCommand::Balance);
+        }
+        _ => Err(BitcoinError::ParseError(String::from(
+            "No valid command specified",
+        ))),
+    }
+}
