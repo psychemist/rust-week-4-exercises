@@ -237,7 +237,7 @@ pub enum CliCommand {
 // Simple CLI argument parser
 pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
     // Match args to "send" or "balance" commands and parse required arguments
-    if args.len() == 0 {
+    if args.is_empty() {
         return Err(BitcoinError::ParseError(String::from(
             "No arguments provided",
         )));
@@ -245,8 +245,8 @@ pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
 
     let mut command: Vec<String> = vec![];
     command.push("BTxC Decoder".to_string());
-    for i in 0..args.len() {
-        command.push(args[i].clone());
+    for item in args {
+        command.push(item.clone());
     }
 
     let cli = match Cli::try_parse_from(command) {
@@ -261,24 +261,22 @@ pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
     match &cli.command {
         Some(CliCommand::Send { amount, address }) => {
             if Some(amount).is_none() {
-                return Err(BitcoinError::ParseError("Amount is required".to_string()));
+                Err(BitcoinError::ParseError("Amount is required".to_string()))
             } else if address.is_empty() {
-                return Err(BitcoinError::ParseError(
+                Err(BitcoinError::ParseError(
                     "Address cannot be empty".to_string(),
-                ));
+                ))
             } else if *amount == 0 {
-                return Err(BitcoinError::InvalidAmount);
+                Err(BitcoinError::InvalidAmount)
             } else {
                 println!("Sending {} satoshis to {}!", amount, address);
-                return Ok(CliCommand::Send {
+                Ok(CliCommand::Send {
                     amount: *amount,
                     address: address.clone(),
-                });
+                })
             }
         }
-        Some(CliCommand::Balance) => {
-            return Ok(CliCommand::Balance);
-        }
+        Some(CliCommand::Balance) => Ok(CliCommand::Balance),
         _ => Err(BitcoinError::ParseError(String::from(
             "No valid command specified",
         ))),
