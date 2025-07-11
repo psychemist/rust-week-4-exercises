@@ -269,7 +269,7 @@ pub fn parse_cli_args(args: &[String]) -> Result<CliCommand, BitcoinError> {
             } else if *amount == 0 {
                 Err(BitcoinError::InvalidAmount)
             } else {
-                println!("Sending {} satoshis to {}!", amount, address);
+                println!("Sending {amount} satoshis to {address}!");
                 Ok(CliCommand::Send {
                     amount: *amount,
                     address: address.clone(),
